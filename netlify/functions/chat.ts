@@ -116,7 +116,71 @@ const handler: Handler = async (event, context) => {
      });
 
          // Supabase verileri için AI prompt
-     const systemPrompt = `You are a STRICT database analyst. You ONLY have access to the exact ${relevantData.length} records shown below from a Supabase database.
+     const systemPrompt = `You are a STRICT database analyst for the Job_E compensation database. You ONLY have access to the exact ${relevantData.length} records shown below from a Supabase database.
+
+# JOB_E DATABASE STRUCTURE & TERMINOLOGY
+
+## Database Overview
+This database contains normalized job position and compensation data covering 110 unique jobs across 34 job families with 5 experience levels. Data includes 653 compensation records per table (base salary, guaranteed, actual).
+
+## Database Structure
+
+### Main Tables:
+1. **jobs**: Main job information (function_type, family, job_code, job_title, pc, level)
+2. **base_salary_stats**: Base salary statistics with percentiles
+3. **total_guaranteed_compensation_stats**: Base Salary + Allowances statistics  
+4. **actual_total_compensation_stats**: Base Salary + Allowances + Bonus statistics
+
+## Compensation Types & Formulas (CRITICAL - Use correct calculations):
+
+### 1. Base Salary (Baz Maaş)
+- **Column**: "Base Salary-Average"  
+- **Definition**: Temel maaş - sadece baz maaş bileşeni
+- **Turkish**: "Baz Maaş" or "Temel Maaş"
+
+### 2. Total Guaranteed Compensation (Baz Maaş + Yan Haklar)
+- **Column**: "Total Guaranteed Compensation-Average"
+- **Definition**: Baz Maaş + Yan Haklar (garantili toplam ücret)
+- **Formula**: Base Salary + Allowances = Total Guaranteed Compensation
+- **Turkish**: "Garantili Toplam Ücret" or "Baz Maaş + Yan Haklar"
+
+### 3. Actual Total Compensation (Gerçekleşen Toplam Gelir)
+- **Column**: "Actual Total Compensation-Average"
+- **Definition**: Baz Maaş + Yan Haklar + Bonus = Gerçekleşen toplam gelir
+- **Formula**: Base Salary + Allowances + Bonus = Actual Total Compensation
+- **Turkish**: "Gerçekleşen Toplam Gelir" or "Baz Maaş + Yan Haklar + Bonus"
+
+## CRITICAL CALCULATION FORMULAS:
+- **Allowances (Yan Haklar)** = Total Guaranteed Compensation - Base Salary
+- **Bonus** = Actual Total Compensation - Total Guaranteed Compensation
+- **Total Benefits (Allowances + Bonus)** = Actual Total Compensation - Base Salary
+
+## Key Database Fields:
+- **Job**: Position title/job name (job_title in normalized structure)
+- **Family**: Job family/department (34 different families)
+- **Level**: Experience level (Director, Manager, Team Leader, Team Member, Unskilled Worker)
+- **country**: Work location
+- **PC**: Position code
+- **Function**: Job function category (function_type in normalized structure)
+
+## Statistical Fields Available:
+- **Average values** (-Average columns): Primary calculation field
+- **Number of organizations** (-#Orgs): Data breadth indicator
+- **Number of cases/data points** (-#Cases): Data reliability indicator
+- **Percentiles**: 10th, 25th, Median (50th), 75th, 90th percentiles
+
+## Data Quality & Reliability:
+- Jobs with >50 cases provide more reliable statistics
+- Higher #Cases numbers indicate more reliable data
+- Some positions have more data points than others
+- Percentile data available for most positions
+
+## Top Job Families by Average Compensation:
+1. **Şube ve Bölge Yönetimi** (Branch & Regional Management)
+2. **Hazine** (Treasury) 
+3. **Kurumsal Bankacılık** (Corporate Banking)
+4. **Ekonomik Araştırmalar** (Economic Research)
+5. **İş Güvenliği / Sağlık** (Occupational Safety/Health)
 
 CRITICAL: You have NO INTERNET ACCESS, NO EXTERNAL KNOWLEDGE, NO OTHER DATA SOURCES!
 
@@ -129,23 +193,18 @@ DATA SOURCE CONFIRMATION:
 - Records for analysis: ${relevantData.length}
 
 MANDATORY ANALYSIS RULES:
-1. Calculate ONLY from the JSON records above - NO external data
-2. If asked about data not in these records, say "This information is not available in the provided database records"
-3. NEVER use phrases like "typically", "generally", "in the market", "industry standard"
-4. ALWAYS state "based on the ${relevantData.length} records in this database"
+1. **ALL COMMUNICATIONS MUST BE IN ENGLISH ONLY** - Never use Turkish or any other language
+2. Calculate ONLY from the JSON records above - NO external data
+3. If asked about data not in these records, say "This information is not available in the provided database records"
+4. ALWAYS state "Based on the ${relevantData.length} records in this database" or "According to the analysis of ${relevantData.length} records provided"
 5. Show exact numbers from the JSON data only
 6. Reference specific job titles and exact salary values
-7. If calculations needed, use ONLY the provided salary figures
+7. If calculations needed, use ONLY the provided salary figures and formulas above
 8. NEVER supplement with external knowledge or assumptions
-
-AVAILABLE FIELDS:
-- Job: Position title
-- Family: Department/job family
-- Level: Job level
-- country: Work location
-- "Base Salary-Average": Base salary amount
-- "Total Guaranteed Compensation-Average": Guaranteed compensation
-- "Actual Total Compensation-Average": Actual total compensation
+9. When discussing compensation, ALWAYS clarify which type: Base Salary, Total Guaranteed Compensation, or Actual Total Compensation
+10. Use the correct calculation formulas for Allowances and Bonus as defined above
+11. When showing calculations, always show the formula used
+12. NEVER use phrases like "typically", "generally", "in the market", "industry standard"
 
 REMEMBER: You are analyzing a closed dataset. No external information exists for you.`;
 
@@ -206,28 +265,84 @@ REMEMBER: You are analyzing a closed dataset. No external information exists for
     });
 
     if (!geminiResponse.ok) {
+      console.error('❌ Gemini API HTTP error:', {
+        status: geminiResponse.status,
+        statusText: geminiResponse.statusText
+      });
       throw new Error(`Gemini API error: ${geminiResponse.status} - ${geminiResponse.statusText}`);
     }
 
     const geminiData = await geminiResponse.json();
     console.log('🤖 Gemini response received successfully');
+    console.log('📊 Gemini response structure:', {
+      hasCandidates: !!geminiData.candidates,
+      candidatesLength: geminiData.candidates?.length || 0,
+      firstCandidateFinishReason: geminiData.candidates?.[0]?.finishReason || 'not found',
+      hasContent: !!geminiData.candidates?.[0]?.content,
+      hasText: !!geminiData.candidates?.[0]?.content?.parts?.[0]?.text,
+      textLength: geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.length || 0,
+      fullResponse: JSON.stringify(geminiData, null, 2).substring(0, 500) + '...'
+    });
     
-    // Safety check
+    // Safety check - daha detaylı handling
     if (geminiData.candidates?.[0]?.finishReason === 'SAFETY') {
       console.log('🚫 Gemini safety block detected');
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({ 
-          response: 'I can help analyze your Supabase database. Please rephrase your question about the job compensation data.' 
+          response: 'Güvenlik nedeniyle sorgunuz engellenmiş olabilir. Lütfen sorunuzu farklı şekilde ifade etmeyi deneyin veya daha spesifik bir maaş analizi sorusu sorun.' 
+        }),
+      };
+    }
+
+    // Content filter check
+    if (geminiData.candidates?.[0]?.finishReason === 'RECITATION') {
+      console.log('🚫 Gemini recitation block detected');
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ 
+          response: 'Üzgünüm, bu soruya net bir cevap veremiyorum. Farklı bir şekilde sorabilir misiniz?' 
+        }),
+      };
+    }
+
+    // Other finish reasons
+    if (geminiData.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+      console.log('⚠️ Gemini max tokens reached');
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ 
+          response: 'Veriler çok kapsamlı olduğu için tam analiz tamamlanamadı. Daha spesifik bir soru sorabilir misiniz?' 
         }),
       };
     }
     
-    const aiResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 
-                      'I could not process your Supabase database query. Please try rephrasing your question.';
+    const aiResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!aiResponse || aiResponse.trim().length === 0) {
+      console.error('❌ Empty or missing AI response:', {
+        hasResponse: !!aiResponse,
+        responseLength: aiResponse?.length || 0,
+        finishReason: geminiData.candidates?.[0]?.finishReason,
+        fullGeminiData: JSON.stringify(geminiData, null, 2)
+      });
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ 
+          response: 'Veritabanı sorgunuz işlenirken bir sorun oluştu. Lütfen sorunuzu yeniden formüle ederek tekrar deneyin.' 
+        }),
+      };
+    }
 
-    console.log('✅ Response generated successfully');
+    console.log('✅ Response generated successfully:', {
+      responseLength: aiResponse.length,
+      responsePreview: aiResponse.substring(0, 100) + '...'
+    });
     return {
       statusCode: 200,
       headers,
