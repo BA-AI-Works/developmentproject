@@ -1,0 +1,25 @@
+Metric,Germany,Poland,Switzerland
+Base Salary-Average,48000,40000,57600
+Base Salary-#Orgs,6,5,7
+Base Salary-#Cases,120,100,144
+Base Salary-10th,38400.0,32000.0,46080.0
+Base Salary-25th,43200.0,36000.0,51840.0
+Base Salary-Median,48000.0,40000.0,57600.0
+Base Salary-75th,52800.0,44000.0,63360.0
+Base Salary-90th,57600.0,48000.0,69120.0
+Total Guaranteed Compensation-Average,54000,45000,64800
+Total Guaranteed Compensation-#Orgs,6,5,7
+Total Guaranteed Compensation-#Cases,120,100,144
+Total Guaranteed Compensation-10th,43200.0,36000.0,51840.0
+Total Guaranteed Compensation-25th,48600.0,40500.0,58320.0
+Total Guaranteed Compensation-Median,54000.0,45000.0,64800.0
+Total Guaranteed Compensation-75th,59400.0,49500.0,71280.0
+Total Guaranteed Compensation-90th,64800.0,54000.0,77760.0
+Actual Total Compensation-Average,60000,50000,72000
+Actual Total Compensation-#Orgs,6,5,7
+Actual Total Compensation-#Cases,120,100,144
+Actual Total Compensation-10th,48000.0,40000.0,57600.0
+Actual Total Compensation-25th,54000.0,45000.0,64800.0
+Actual Total Compensation-Median,60000.0,50000.0,72000.0
+Actual Total Compensation-75th,66000.0,55000.0,79200.0
+Actual Total Compensation-90th,72000.0,60000.0,86400.0

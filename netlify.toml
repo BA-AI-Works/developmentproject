@@ -1,0 +1,29 @@
+[build]
+  command = "npm run build:client"
+  functions = "netlify/functions"
+  publish = "dist"
+
+[dev]
+  targetPort = 8080
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[build.environment]
+  NODE_VERSION = "18"
+  # Production environment variables - Netlify UI'den tanımlanmalı
+  # OPENAI_API_KEY = "sk-proj-..."  # Netlify UI'den set edilmeli
+  # VITE_SUPABASE_URL = "https://..."  # Netlify UI'den set edilmeli  
+  # VITE_SUPABASE_ANON_KEY = "..."  # Netlify UI'den set edilmeli
+
+# Environment variables for different contexts
+[context.production.environment]
+  NODE_ENV = "production"
+
+[context.deploy-preview.environment]
+  NODE_ENV = "staging"
+
+[context.branch-deploy.environment]
+  NODE_ENV = "development"

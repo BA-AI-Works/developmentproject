@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="45" fill="#f0f8ff" stroke="#2563eb" stroke-width="2"/>
+  
+  <!-- Robot head -->
+  <rect x="25" y="25" width="50" height="40" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+  
+  <!-- Eyes -->
+  <circle cx="38" cy="40" r="6" fill="#2563eb"/>
+  <circle cx="62" cy="40" r="6" fill="#2563eb"/>
+  <circle cx="38" cy="40" r="2" fill="#ffffff"/>
+  <circle cx="62" cy="40" r="2" fill="#ffffff"/>
+  
+  <!-- Smile -->
+  <path d="M35 55 Q50 70 65 55" stroke="#2563eb" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Antenna -->
+  <line x1="50" y1="25" x2="50" y2="15" stroke="#2563eb" stroke-width="2"/>
+  <circle cx="50" cy="12" r="3" fill="#2563eb"/>
+  
+  <!-- Side elements -->
+  <rect x="15" y="35" width="8" height="15" rx="4" fill="#2563eb"/>
+  <rect x="77" y="35" width="8" height="15" rx="4" fill="#2563eb"/>
+</svg> 
